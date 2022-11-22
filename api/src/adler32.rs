@@ -7,9 +7,9 @@
 const ADLER32_MOD: u32 = 0xFFF1;
 
 /// Checksum hash with [Adler-32](https://en.wikipedia.org/wiki/Adler-32)
-pub fn adler32_checksum(hash: Vec<u8>) -> u32 {
-  let mut left = 1;
-  let mut right = 0;
+pub fn adler32_checksum(hash: Vec<u8>, init_left: u32, init_right: u32) -> u32 {
+  let mut left = init_left;
+  let mut right = init_right;
 
   for byte in hash.iter() {
     let casted_byte = *byte as u32;

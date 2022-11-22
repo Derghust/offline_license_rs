@@ -53,7 +53,7 @@ pub fn license_generate_key<T: LicenseKeySerializer>(
   }
 
   // Create checksum
-  let checksum = adler32_checksum(key.clone());
+  let checksum = adler32_checksum(key.clone(), 0xFA, 0xAA);
   for byte in checksum.to_be_bytes().iter() {
     key.push(*byte)
   }
@@ -65,7 +65,7 @@ pub fn license_validate_key(key: Vec<u8>) -> LicenseKeyStatus {
   let raw_key = key[0..key.len() - 4].to_vec();
 
   // Validate checksum
-  let checksum = adler32_checksum(raw_key).to_be_bytes().to_vec();
+  let checksum = adler32_checksum(raw_key, 0xFA, 0xAA).to_be_bytes().to_vec();
   let key_checksum = key[key.len() - 4..].to_vec();
   if checksum != key_checksum {
     return LicenseKeyStatus::Invalid;
