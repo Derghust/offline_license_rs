@@ -76,9 +76,11 @@ fn main() {
     license.borrow(),
   );
 
+  // TODO generate license key properties size
+
   info!("License [raw={}; key={}]", user_email, license.serialize_key(license_key.clone()));
 
-  let status = license_validate_key(license_key.clone());
+  let status = license_validate_key(license_key.clone(), 10, 3, 4);
   match status {
     LicenseKeyStatus::Valid => {info!("Key is valid")}
     LicenseKeyStatus::Invalid => {info!("Key is invalid")}

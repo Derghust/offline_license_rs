@@ -3,9 +3,11 @@
 //! **Offline license RS** license generator used for offline software license verification.
 
 mod adler32;
+mod license_key;
 
 use sha3::{digest::{Update, ExtendableOutput, XofReader}, Shake256};
 use crate::adler32::adler32_checksum;
+use crate::license_key::LicenseKey;
 
 pub enum LicenseKeyStatus {
   Valid,
@@ -61,13 +63,22 @@ pub fn license_generate_key<T: LicenseKeySerializer>(
   key
 }
 
-pub fn license_validate_key(key: Vec<u8>) -> LicenseKeyStatus {
-  let raw_key = key[0..key.len() - 4].to_vec();
+pub fn license_validate_key(
+  key: Vec<u8>,
+  key_size: usize,
+  payload_size: usize,
+  checksum_size: usize
+) -> LicenseKeyStatus {
+  let license_key = LicenseKey::deserialize(
+    key,
+    key_size,
+    payload_size,
+    checksum_size
+  ).unwrap_or_else(|_| LicenseKey::default());
 
   // Validate checksum
-  let checksum = adler32_checksum(raw_key, 0xFA, 0xAA).to_be_bytes().to_vec();
-  let key_checksum = key[key.len() - 4..].to_vec();
-  if checksum != key_checksum {
+  let checksum = adler32_checksum(license_key.key, 0xFA, 0xAA).to_be_bytes().to_vec();
+  if checksum != license_key.checksum {
     return LicenseKeyStatus::Invalid;
   }
 

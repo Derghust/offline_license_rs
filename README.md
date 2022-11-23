@@ -24,7 +24,7 @@ prevent **Cracking** or **Unauthorized distributing** of your software also know
 ## Table of contents
 
 - [Example](#example)
-- [Q&A](#q-a)
+- [Q&A](#q&a)
 
 ## Example
 
