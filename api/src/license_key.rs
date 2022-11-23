@@ -1,8 +1,27 @@
 #[derive(PartialEq, Clone, Debug)]
+pub struct LicenseKeyProperties {
+  pub key_size: usize,
+  pub payload_size: usize,
+  pub checksum_size: usize
+}
+
+impl LicenseKeyProperties {
+  pub fn default() -> LicenseKeyProperties {
+    LicenseKeyProperties {
+      key_size: 0,
+      payload_size: 0,
+      checksum_size: 0
+    }
+  }
+}
+
+#[derive(PartialEq, Clone, Debug)]
 pub struct LicenseKey {
   pub key: Vec<u8>,
   pub payload: Vec<u8>,
-  pub checksum: Vec<u8>
+  pub checksum: Vec<u8>,
+  pub properties: LicenseKeyProperties,
+  pub serialized_key: Option<Vec<u8>>
 }
 
 impl LicenseKey {
@@ -16,10 +35,18 @@ impl LicenseKey {
       return Err("Cannot deserialize license key with larger properties than raw key itself!")
     }
 
+    let properties = LicenseKeyProperties {
+      key_size,
+      payload_size,
+      checksum_size
+    };
+
     Ok(LicenseKey{
       key: raw_key[0..key_size].to_vec(),
       payload: raw_key[key_size..key_size+payload_size].to_vec(),
-      checksum: raw_key[key_size+payload_size..key_size+payload_size+checksum_size].to_vec()
+      checksum: raw_key[key_size+payload_size..key_size+payload_size+checksum_size].to_vec(),
+      properties,
+      serialized_key: None
     })
   }
 
@@ -27,20 +54,27 @@ impl LicenseKey {
     LicenseKey {
       key: Vec::new(),
       payload: Vec::new(),
-      checksum: Vec::new()
+      checksum: Vec::new(),
+      properties: LicenseKeyProperties::default(),
+      serialized_key: None
     }
   }
 }
 
 #[cfg(test)]
 mod tests {
-  use crate::license_key::LicenseKey;
+  use crate::license_key::{LicenseKey, LicenseKeyProperties};
 
   #[test]
   fn license_key_validate_deserialization() {
     let key: Vec<u8> = Vec::from([0x01, 0x02, 0x03, 0x04]);
     let payload: Vec<u8> = Vec::from([0x05, 0x06, 0x07, 0x08]);
     let checksum: Vec<u8> = Vec::from([0x09, 0x0A, 0x0B, 0x0C]);
+    let properties: LicenseKeyProperties = LicenseKeyProperties {
+      key_size: 4,
+      payload_size: 4,
+      checksum_size: 4
+    };
 
     let mut raw_key: Vec<u8> = Vec::new();
     raw_key.extend(key.clone());
@@ -57,7 +91,9 @@ mod tests {
     let manual_license_key = LicenseKey {
       key,
       payload,
-      checksum
+      checksum,
+      properties,
+      serialized_key: None
     };
 
     assert_eq!(deserialized_license_key, manual_license_key);

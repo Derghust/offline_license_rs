@@ -1,7 +1,7 @@
 use std::borrow::Borrow;
 use log::{info, LevelFilter};
 use simplelog::{ColorChoice, Config, TerminalMode, TermLogger};
-use offline_license_rs::{license_generate_key, license_validate_key, LicenseKeySerializer, LicenseKeyStatus};
+use offline_license_rs::{generate_license_key, license_validate_key, LicenseKeySerializer, LicenseKeyStatus};
 
 struct MyLicense {
   magic: Vec<u8>,
@@ -68,7 +68,7 @@ fn main() {
   let user_email = "sample.name@sample.domain.com";
 
   let license = MyLicense{ magic: Vec::from([1,2,3]), seed: 123, split: 3 };
-  let license_key = license_generate_key(
+  let license_key = generate_license_key(
     license.seed,
     license.magic.to_vec(),
     license.magic.len(),
