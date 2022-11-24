@@ -21,13 +21,13 @@ pub struct LicenseKey {
   pub payload: Vec<u8>,
   pub checksum: Vec<u8>,
   pub properties: LicenseKeyProperties,
-  pub serialized_key: Option<Vec<u8>>
+  pub serialized_key: Vec<u8>
 }
 
 impl LicenseKey {
   #[inline(always)]
   pub fn deserialize(
-    raw_key: Vec<u8>,
+    raw_key: &Vec<u8>,
     key_size: usize,
     payload_size: usize,
     checksum_size: usize
@@ -47,7 +47,7 @@ impl LicenseKey {
       payload: raw_key[key_size..key_size+payload_size].to_vec(),
       checksum: raw_key[key_size+payload_size..key_size+payload_size+checksum_size].to_vec(),
       properties,
-      serialized_key: None
+      serialized_key: Vec::new()
     })
   }
 
@@ -58,7 +58,7 @@ impl LicenseKey {
       payload: Vec::new(),
       checksum: Vec::new(),
       properties: LicenseKeyProperties::default(),
-      serialized_key: None
+      serialized_key: Vec::new()
     }
   }
 }
@@ -84,7 +84,7 @@ mod tests {
     raw_key.extend(checksum.clone());
 
     let deserialized_license_key = LicenseKey::deserialize(
-      raw_key,
+      &raw_key,
       4,
       4,
       4
@@ -95,7 +95,7 @@ mod tests {
       payload,
       checksum,
       properties,
-      serialized_key: None
+      serialized_key: Vec::new()
     };
 
     assert_eq!(deserialized_license_key, manual_license_key);

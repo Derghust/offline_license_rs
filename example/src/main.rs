@@ -74,20 +74,20 @@ fn main() {
 
   let license = MyLicense{ magic: magic.clone(), seed: 123, split: 3 };
   let license_key = generate_license_key(
-    license.seed.clone(),
-    license.magic.clone(),
+    license.seed,
+    &license.magic,
     10,
-    license.borrow(),
+    &license,
     (0xFF, 0xAA)
   );
 
-  info!("License [raw={}; key={}]", user_email, license.serialize_key(license_key.clone().serialized_key.unwrap()));
+  info!("License [raw={}; key={}]", user_email, license.serialize_key(license_key.clone().serialized_key));
 
   let mut byte_check: Vec<(usize, Vec<u8>)> = Vec::new();
   let byte_check_magic: &Vec<u8> = &*magic.get(0).unwrap();
   byte_check.push((0, byte_check_magic.clone()));
 
-  let status = license_validate_key(license_key.clone(), Vec::new(), byte_check, (0xFF, 0xAA));
+  let status = license_validate_key(license_key.borrow(), Vec::new(), byte_check, (0xFF, 0xAA));
   match status {
     LicenseKeyStatus::Valid => {info!("Key is valid")}
     LicenseKeyStatus::Invalid => {info!("Key is invalid")}
