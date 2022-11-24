@@ -4,13 +4,14 @@ use simplelog::{ColorChoice, Config, TerminalMode, TermLogger};
 use offline_license_rs::{generate_license_key, license_validate_key, LicenseKeySerializer, LicenseKeyStatus};
 
 struct MyLicense {
-  magic: Vec<u8>,
+  magic: Vec<Vec<u8>>,
   seed: u64,
   split: usize
 }
 
 impl LicenseKeySerializer for MyLicense {
-  fn hash(&self, seed: u64, magic: Vec<u8>) -> u8 {
+  #[inline(always)]
+  fn hash(&self, seed: u64, magic: &[u8]) -> u8 {
     let mut hash = seed as u8;
 
     hash += *magic.get(0).unwrap();
@@ -20,11 +21,12 @@ impl LicenseKeySerializer for MyLicense {
     hash
   }
 
-
+  #[inline(always)]
   fn deserialize_key(&self, key: String) -> Vec<u8> {
     hex::decode(key).unwrap()
   }
 
+  #[inline(always)]
   fn serialize_key(&self, key: Vec<u8>) -> String {
     let mut output = String::new();
     let calc = key.len() / self.split;
@@ -67,20 +69,24 @@ fn main() {
 
   let user_email = "sample.name@sample.domain.com";
 
-  let license = MyLicense{ magic: Vec::from([1,2,3]), seed: 123, split: 3 };
+  let mut magic: Vec<Vec<u8>> = Vec::new();
+  magic.push(Vec::from([1,2,3]));
+
+  let license = MyLicense{ magic: magic.clone(), seed: 123, split: 3 };
   let license_key = generate_license_key(
-    license.seed,
-    license.magic.to_vec(),
-    license.magic.len(),
+    license.seed.clone(),
+    license.magic.clone(),
     10,
     license.borrow(),
   );
 
-  // TODO generate license key properties size
+  info!("License [raw={}; key={}]", user_email, license.serialize_key(license_key.clone().serialized_key.unwrap()));
 
-  info!("License [raw={}; key={}]", user_email, license.serialize_key(license_key.clone()));
+  let mut byte_check: Vec<(usize, Vec<u8>)> = Vec::new();
+  let byte_check_magic: &Vec<u8> = &*magic.get(0).unwrap();
+  byte_check.push((0, byte_check_magic.clone()));
 
-  let status = license_validate_key(license_key.clone(), 10, 3, 4);
+  let status = license_validate_key(license_key.clone(), Vec::new(), byte_check);
   match status {
     LicenseKeyStatus::Valid => {info!("Key is valid")}
     LicenseKeyStatus::Invalid => {info!("Key is invalid")}

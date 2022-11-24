@@ -25,6 +25,7 @@ pub struct LicenseKey {
 }
 
 impl LicenseKey {
+  #[inline(always)]
   pub fn deserialize(
     raw_key: Vec<u8>,
     key_size: usize,
@@ -50,6 +51,7 @@ impl LicenseKey {
     })
   }
 
+  #[inline(always)]
   pub fn default() -> LicenseKey {
     LicenseKey {
       key: Vec::new(),
