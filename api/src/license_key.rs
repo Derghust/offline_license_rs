@@ -1,4 +1,11 @@
 #[derive(PartialEq, Clone, Debug)]
+pub enum LicenseKeyStatus {
+  Valid,
+  Invalid,
+  Blacklisted
+}
+
+#[derive(PartialEq, Clone, Debug)]
 pub struct LicenseKeyProperties {
   pub key_size: usize,
   pub payload_size: usize,

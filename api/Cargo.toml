@@ -4,5 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+log = { version="0.4.17", feature = ["release_max_level_warn"] }
 sha3 = "0.10.6"
 hex-literal = "0.3.4"
+rand = "0.8.5"
+hex = "0.4.3"
