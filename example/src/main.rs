@@ -78,6 +78,7 @@ fn main() {
     license.magic.clone(),
     10,
     license.borrow(),
+    (0xFF, 0xAA)
   );
 
   info!("License [raw={}; key={}]", user_email, license.serialize_key(license_key.clone().serialized_key.unwrap()));
@@ -86,7 +87,7 @@ fn main() {
   let byte_check_magic: &Vec<u8> = &*magic.get(0).unwrap();
   byte_check.push((0, byte_check_magic.clone()));
 
-  let status = license_validate_key(license_key.clone(), Vec::new(), byte_check);
+  let status = license_validate_key(license_key.clone(), Vec::new(), byte_check, (0xFF, 0xAA));
   match status {
     LicenseKeyStatus::Valid => {info!("Key is valid")}
     LicenseKeyStatus::Invalid => {info!("Key is invalid")}

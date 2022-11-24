@@ -28,7 +28,8 @@ pub fn generate_license_key<T: LicenseKeySerializer>(
   seed: u64,
   magic: Vec<Vec<u8>>,
   hash_size: usize,
-  serializer: &T
+  serializer: &T,
+  checksum_init: (u32, u32)
 ) -> LicenseKey {
   let mut license_key = LicenseKey::default();
   let mut serialized_license_key = Vec::new();
@@ -47,17 +48,15 @@ pub fn generate_license_key<T: LicenseKeySerializer>(
   license_key.properties.key_size = buffer.len();
 
   // Generate payload
-  let mut payload_size: usize = 0;
   for m in magic.iter() {
-    payload_size += m.len();
     let payload = serializer.hash(seed, m);
     serialized_license_key.push(payload);
     license_key.payload.push(payload);
   }
-  license_key.properties.payload_size = payload_size;
+  license_key.properties.payload_size = license_key.payload.len();
 
   // Create checksum
-  let checksum = adler32_checksum(serialized_license_key.clone(), 0xFA, 0xAA);
+  let checksum = adler32_checksum(serialized_license_key.clone(), checksum_init.0, checksum_init.1);
   for byte in checksum.to_be_bytes().iter() {
     serialized_license_key.push(*byte);
     license_key.checksum.push(*byte);
@@ -72,7 +71,8 @@ pub fn generate_license_key<T: LicenseKeySerializer>(
 pub fn license_validate_key(
   key: LicenseKey,
   blacklist: Vec<Vec<u8>>,
-  byte_check: Vec<(usize, Vec<u8>)>
+  byte_check: Vec<(usize, Vec<u8>)>,
+  checksum_init: (u32, u32)
 ) -> LicenseKeyStatus {
   let license_key = LicenseKey::deserialize(
     key.serialized_key.unwrap_or_default(),
@@ -82,11 +82,12 @@ pub fn license_validate_key(
   ).unwrap_or_else(|_| LicenseKey::default());
 
   // Validate checksum
-  let mut key_payload = Vec::new();
-  key_payload.extend(license_key.key.clone());
-  key_payload.extend(license_key.payload.clone());
+  let mut checksum_bytes = Vec::new();
+  checksum_bytes.extend(license_key.key.clone());
+  checksum_bytes.extend(license_key.payload.clone());
 
-  let checksum = adler32_checksum(key_payload, 0xFA, 0xAA).to_be_bytes().to_vec();
+  let checksum = adler32_checksum(checksum_bytes, checksum_init.0, checksum_init.1).to_be_bytes().to_vec();
+  println!("Checksum [{}:{}]", checksum.get(0).unwrap(), license_key.checksum.get(0).unwrap());
   if checksum != license_key.checksum {
     return LicenseKeyStatus::Invalid;
   }
@@ -150,11 +151,10 @@ mod tests {
   fn validate_license_key_validation() {
     // License key variables
     let seed = 123;
-    let magic = Vec::from([1,2,3]);
-
+    let checksum_init = (0xFF, 0xAA);
 
     // Validate empty license key as invalid
-    assert_eq!(license_validate_key(LicenseKey::default(), Vec::new(), Vec::new()), LicenseKeyStatus::Invalid);
+    assert_eq!(license_validate_key(LicenseKey::default(), Vec::new(), Vec::new(), checksum_init), LicenseKeyStatus::Invalid);
 
     // Validate non empty license key which are valid as valid
     let license_serializer = TestLicenseKeySerialization{};
@@ -163,11 +163,12 @@ mod tests {
     magic.push(Vec::from([1,2,3]));
 
     let license_key = generate_license_key(
-      123,
+      seed,
       magic,
       8,
-      license_serializer.borrow()
+      license_serializer.borrow(),
+      checksum_init
     );
-    assert_eq!(license_validate_key(license_key, Vec::new(), Vec::new()), LicenseKeyStatus::Valid);
+    assert_eq!(license_validate_key(license_key, Vec::new(), Vec::new(), checksum_init), LicenseKeyStatus::Valid);
   }
 }
