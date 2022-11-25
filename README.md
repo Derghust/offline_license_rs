@@ -9,6 +9,8 @@
 
 Be patient, this is still WIP
 
+![Manual Version](https://img.shields.io/badge/version-v0.1.0-4F4FFF)
+
 (づ｡◕‿‿◕｡)づ
 
 ---
