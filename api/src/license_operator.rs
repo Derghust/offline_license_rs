@@ -16,18 +16,30 @@ pub struct LicenseOperator {
   key_size: usize,
   checksum_init: (u32, u32),
 
-  serializer: Box<dyn LicenseKeySerializer>
+  serializer: Box<dyn LicenseKeySerializer>,
+
+  blacklist: Vec<Vec<u8>>,
+  byte_check: Vec<(usize, LicenseMagic)>
 }
 
 impl LicenseOperator {
   #[inline(always)]
-  pub fn new(magic: LicenseMagic, key_size: usize, checksum_init: (u32, u32), serializer: Box<dyn LicenseKeySerializer>) -> LicenseOperator {
+  pub fn new(
+    magic: LicenseMagic,
+    key_size: usize,
+    checksum_init: (u32, u32),
+    serializer: Box<dyn LicenseKeySerializer>,
+    blacklist: Vec<Vec<u8>>,
+    byte_check: Vec<(usize, LicenseMagic)>
+  ) -> LicenseOperator {
     LicenseOperator {
       rng: rand::thread_rng(),
       magic,
       key_size,
       checksum_init,
-      serializer
+      serializer,
+      blacklist,
+      byte_check
     }
   }
 
@@ -38,13 +50,15 @@ impl LicenseOperator {
       magic: LicenseMagic::default(),
       key_size: 16,
       checksum_init: (0xFFAA, 0xAAFF),
-      serializer: Box::new( DefaultLicenseKeySerializer { })
+      serializer: Box::new( DefaultLicenseKeySerializer { }),
+      blacklist: Vec::new(),
+      byte_check: Vec::new()
     }
   }
 
   #[inline(always)]
   pub fn randomize_magic(&mut self, magic_size: usize, magic_count: usize) -> &Self {
-    for x in 0..magic_size {
+    for _x in 0..magic_size {
       let mut magic: Vec<u8> = Vec::new();
 
       info!("Randomized magic:");
@@ -63,6 +77,13 @@ impl LicenseOperator {
   #[inline(always)]
   pub fn get_serialized_key(&self, license_key: &LicenseKey) -> String {
     self.serializer.serialize_key(&license_key.serialized_key)
+  }
+
+  #[inline(always)]
+  pub fn add_seed_to_blacklist(&mut self, seed: &[u8]) -> &Self {
+    self.blacklist.push(seed.to_vec());
+
+    self
   }
 
   #[inline(always)]
@@ -118,9 +139,7 @@ impl LicenseOperator {
   #[inline(always)]
   pub fn validate_license_key(
     &self,
-    key: &LicenseKey,
-    blacklist: Vec<Vec<u8>>,
-    byte_check: Vec<(usize, Vec<u8>)>
+    key: &LicenseKey
   ) -> LicenseKeyStatus {
     let license_key = LicenseKey::deserialize(
       &key.serialized_key,
@@ -140,17 +159,14 @@ impl LicenseOperator {
     }
 
     // Validate seed from blacklist
-    if !blacklist.is_empty() {
-      // TODO search with binary tree algorithm
-      for bl in blacklist.iter() {
-        if license_key.key == *bl {
-          return LicenseKeyStatus::Blacklisted;
-        }
+    for bl in self.blacklist.iter() {
+      if license_key.key == *bl {
+        return LicenseKeyStatus::Blacklisted;
       }
     }
 
     // Validate key with byte check
-    for bc in byte_check {
+    for bc in &self.byte_check {
       if license_key.key.get(bc.0).is_none() {
         return LicenseKeyStatus::Invalid
       }
@@ -174,10 +190,6 @@ mod tests {
 
     let license_key = license_op.generate_license_key(user_email.as_bytes());
 
-    assert_eq!(license_op.validate_license_key(
-      &license_key,
-      Vec::new(),
-      Vec::new()
-    ), LicenseKeyStatus::Valid)
+    assert_eq!(license_op.validate_license_key(&license_key), LicenseKeyStatus::Valid)
   }
 }

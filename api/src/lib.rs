@@ -7,7 +7,6 @@ pub mod license_key;
 pub mod license_operator;
 pub mod license_serializer;
 pub mod license_magic;
-pub mod license_blacklist;
 
 pub use crate::license_key::{LicenseKey};
 

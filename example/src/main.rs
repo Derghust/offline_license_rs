@@ -19,11 +19,7 @@ fn main() {
   let license_key = license_op.generate_license_key(user_email.as_bytes());
   info!("License key [key={}]", license_op.get_serialized_key(&license_key));
 
-  match license_op.validate_license_key(
-    &license_key,
-    Vec::new(),
-    Vec::new()
-  ) {
+  match license_op.validate_license_key(&license_key) {
     LicenseKeyStatus::Valid => { info!("Valid key") }
     LicenseKeyStatus::Invalid => { info!("Invalid key") }
     LicenseKeyStatus::Blacklisted => { info!("Blacklisted key") }
