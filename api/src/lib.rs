@@ -2,6 +2,8 @@
 //!
 //! **Offline license RS** license generator used for offline software license verification.
 
+extern crate core;
+
 pub use crate::license_key::LicenseKey;
 
 pub mod adler32;

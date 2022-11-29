@@ -15,10 +15,11 @@ fn main() {
 
     let user_email = "sample.name@sample.domain.com";
 
-    let mut license_op = LicenseOperator::default();
-    license_op.randomize_magic(1, 3);
+    let license_op = LicenseOperator::default(1, 3, [1, 2, 3, 4, 5, 6, 7, 8]);
 
-    let license_key = license_op.generate_license_key(user_email.as_bytes());
+    let license_key = license_op
+        .generate_license_key(user_email.as_bytes())
+        .unwrap();
     info!(
         "License key [key={}]",
         license_op.get_serialized_key(&license_key)

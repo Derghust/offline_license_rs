@@ -1,4 +1,7 @@
+use color_eyre::eyre::eyre;
+use color_eyre::Report;
 use std::borrow::Borrow;
+use std::hash::Hash;
 
 use log::info;
 use rand::rngs::ThreadRng;
@@ -15,13 +18,14 @@ use crate::license_serializer::{DefaultLicenseKeySerializer, LicenseKeySerialize
 use crate::LicenseKey;
 
 pub struct LicenseOperator {
-    rng: ThreadRng,
-
     magic: LicenseMagic,
     key_size: usize,
-    checksum_init: (u32, u32),
 
     serializer: Box<dyn LicenseKeySerializer>,
+
+    checksum_magic: Vec<u8>,
+    checksum_byte_size: usize,
+    checksum_operator: fn(&Vec<u8>, &Vec<u8>) -> Result<Vec<u8>, Report>,
 
     blacklist: Vec<Vec<u8>>,
     byte_check: Vec<(usize, LicenseMagic)>,
@@ -32,51 +36,53 @@ impl LicenseOperator {
     pub fn new(
         magic: LicenseMagic,
         key_size: usize,
-        checksum_init: (u32, u32),
         serializer: Box<dyn LicenseKeySerializer>,
+        checksum_magic: Vec<u8>,
+        checksum_byte_size: usize,
+        checksum_operator: fn(&Vec<u8>, &Vec<u8>) -> Result<Vec<u8>, Report>,
         blacklist: Vec<Vec<u8>>,
         byte_check: Vec<(usize, LicenseMagic)>,
+        magic_size: usize,
+        magic_count: usize,
     ) -> LicenseOperator {
-        LicenseOperator {
-            rng: rand::thread_rng(),
+        let mut license = LicenseOperator {
             magic,
             key_size,
-            checksum_init,
             serializer,
+            checksum_magic,
+            checksum_byte_size,
+            checksum_operator,
             blacklist,
             byte_check,
-        }
+        };
+
+        license.magic.randomize_magic(magic_size, magic_count);
+
+        license
     }
 
+    /// Default license operator is not recommended for use in Production. We recommend to define
+    /// your own license operator with **new** method.
     #[inline(always)]
-    pub fn default() -> LicenseOperator {
-        LicenseOperator {
-            rng: rand::thread_rng(),
+    pub fn default(
+        magic_size: usize,
+        magic_count: usize,
+        checksum_magic: [u8; 8],
+    ) -> LicenseOperator {
+        let mut license = LicenseOperator {
             magic: LicenseMagic::default(),
             key_size: 16,
-            checksum_init: (0xFFAA, 0xAAFF),
             serializer: Box::new(DefaultLicenseKeySerializer {}),
+            checksum_magic: Vec::from(checksum_magic.to_vec()),
+            checksum_byte_size: 4,
+            checksum_operator: adler32_checksum,
             blacklist: Vec::new(),
             byte_check: Vec::new(),
-        }
-    }
+        };
 
-    #[inline(always)]
-    pub fn randomize_magic(&mut self, magic_size: usize, magic_count: usize) -> &Self {
-        for _x in 0..magic_size {
-            let mut magic: Vec<u8> = Vec::new();
+        license.magic.randomize_magic(magic_size, magic_count);
 
-            info!("Randomized magic:");
-            for y in 0..magic_count {
-                let random_value = self.rng.gen();
-                magic.push(random_value);
-                info!("\t {} - {}", y, random_value);
-            }
-
-            self.magic.push(magic);
-        }
-
-        self
+        license
     }
 
     #[inline(always)]
@@ -85,30 +91,31 @@ impl LicenseOperator {
     }
 
     #[inline(always)]
-    pub fn add_seed_to_blacklist(&mut self, seed: &[u8]) -> &Self {
+    pub fn add_seed_to_blacklist(&mut self, seed: &[u8]) {
         self.blacklist.push(seed.to_vec());
-
-        self
     }
 
     #[inline(always)]
-    pub fn generate_license_key(&self, seed: &[u8]) -> LicenseKey {
+    pub fn generate_license_key(&self, seed: &[u8]) -> Result<LicenseKey, Report> {
         // Validate user parameters
         // Minimal 8 seed size, USER_PAYLOAD payload size and 4 checksum size
         let license_key_required_size: usize = 8 + self.magic.payload_size() + 4;
         if self.key_size <= license_key_required_size {
-            info!(
+            return Err(eyre!(
                 "Cannot generate license key with less than {} key size! [key_size={}]",
-                license_key_required_size, self.key_size
-            );
-            return LicenseKey::default();
+                license_key_required_size,
+                self.key_size
+            ));
         }
-        let license_key_hash_size = self.key_size - 4 - self.magic.payload_size();
+
+        let license_key_hash_size =
+            self.key_size - self.checksum_byte_size - self.magic.payload_size();
 
         let mut license_key = LicenseKey::default();
         let mut serialized_license_key = Vec::new();
 
         // Hash seed to license key
+        // TODO FIX ME https://github.com/Derghust/offline_license_rs/pull/1#discussion_r1033030414
         let mut hasher = Shake256::default();
         hasher.update(seed);
         let mut reader = hasher.finalize_xof();
@@ -130,19 +137,15 @@ impl LicenseOperator {
         license_key.properties.payload_size = license_key.payload.len();
 
         // Create checksum
-        let checksum = adler32_checksum(
-            serialized_license_key.clone(),
-            self.checksum_init.0,
-            self.checksum_init.1,
-        );
-        for byte in checksum.to_be_bytes().iter() {
-            serialized_license_key.push(*byte);
-            license_key.checksum.push(*byte);
-        }
-        license_key.properties.checksum_size = checksum.to_be_bytes().len();
+        // TODO This is ugly
+        let checksum = adler32_checksum(&serialized_license_key, &self.checksum_magic).unwrap();
 
+        serialized_license_key.extend_from_slice(&checksum);
+        license_key.checksum.extend_from_slice(&checksum);
+        license_key.properties.checksum_size = checksum.len();
         license_key.serialized_key = serialized_license_key.clone();
-        license_key
+
+        Ok(license_key)
     }
 
     #[inline(always)]
@@ -160,9 +163,9 @@ impl LicenseOperator {
         checksum_bytes.extend(license_key.key.clone());
         checksum_bytes.extend(license_key.payload.clone());
 
-        let checksum = adler32_checksum(checksum_bytes, self.checksum_init.0, self.checksum_init.1)
-            .to_be_bytes()
-            .to_vec();
+        let checksum =
+            (self.checksum_operator)(&checksum_bytes, &self.checksum_magic).unwrap_or(Vec::new());
+
         if checksum != license_key.checksum {
             return LicenseKeyStatus::Invalid;
         }
@@ -194,13 +197,14 @@ mod tests {
     fn validate_license_key_validation() {
         let user_email = "sample.name@sample.domain.com";
 
-        let mut license_op = LicenseOperator::default();
-        license_op.randomize_magic(1, 3);
+        let mut license_op = LicenseOperator::default(1, 3, [1, 2, 3, 4, 5, 6, 7, 8]);
 
         let license_key = license_op.generate_license_key(user_email.as_bytes());
 
+        assert!(license_key.is_ok());
+
         assert_eq!(
-            license_op.validate_license_key(&license_key),
+            license_op.validate_license_key(&license_key.unwrap()),
             LicenseKeyStatus::Valid
         )
     }

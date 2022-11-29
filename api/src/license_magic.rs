@@ -1,3 +1,5 @@
+use rand::{Rng, RngCore};
+
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct LicenseMagic {
     magic: Vec<Vec<u8>>,
@@ -12,23 +14,25 @@ impl LicenseMagic {
         LicenseMagic { magic: Vec::new() }
     }
 
-    pub fn push(&mut self, magic: Vec<u8>) -> &Self {
+    pub fn push(&mut self, magic: Vec<u8>) {
         self.magic.push(magic);
-
-        self
     }
 
     pub fn payload_size(&self) -> usize {
-        let mut payload_size: usize = 0;
-
-        for magic in self.magic.iter() {
-            payload_size += magic.len();
-        }
-
-        payload_size
+        self.magic.iter().map(|m| m.len()).sum()
     }
 
     pub fn get_magic(&self) -> &Vec<Vec<u8>> {
         &self.magic
+    }
+
+    #[inline(always)]
+    pub fn randomize_magic(&mut self, magic_size: usize, magic_count: usize) {
+        let mut rng = rand::thread_rng();
+
+        for _ in 0..magic_size {
+            self.magic
+                .push((0..magic_count).map(|_| rng.gen()).collect());
+        }
     }
 }

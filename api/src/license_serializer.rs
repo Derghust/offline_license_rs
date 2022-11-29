@@ -10,6 +10,8 @@ pub trait LicenseKeySerializer {
 
 pub struct DefaultLicenseKeySerializer {}
 
+/// Default license serializer is not recommended for use in Production. We recommend to define
+/// your own license serializer.
 impl LicenseKeySerializer for DefaultLicenseKeySerializer {
     #[inline(always)]
     fn hash(&self, seed: &[u8], magic: &[u8]) -> u8 {
