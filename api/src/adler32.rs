@@ -14,7 +14,7 @@ const ADLER32_MOD: u32 = 0xFFF1;
 ///
 /// Generate checksum from hash with developer defined left and right initialized values.
 #[inline(always)]
-pub fn adler32_checksum(hash: &Vec<u8>, init: &Vec<u8>) -> Result<Vec<u8>, Report> {
+pub fn adler32_checksum(hash: &[u8], init: &[u8]) -> Result<Vec<u8>, Report> {
     if init.len() != 8 {
         return Err(eyre!(
             "Cannot generate checksum with invalid init count! [count={}]",

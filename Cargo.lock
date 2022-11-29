@@ -256,6 +256,7 @@ dependencies = [
 name = "offline_license_rs_example"
 version = "0.1.0"
 dependencies = [
+ "color-eyre",
  "hex",
  "log",
  "offline_license_rs",

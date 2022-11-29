@@ -1,3 +1,6 @@
+use color_eyre::eyre::eyre;
+use color_eyre::Report;
+
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum LicenseKeyStatus {
     Valid,
@@ -13,7 +16,7 @@ pub struct LicenseKeyProperties {
 }
 
 impl LicenseKeyProperties {
-    pub fn default() -> LicenseKeyProperties {
+    pub fn default() -> Self {
         LicenseKeyProperties {
             key_size: 0,
             payload_size: 0,
@@ -38,11 +41,11 @@ impl LicenseKey {
         key_size: usize,
         payload_size: usize,
         checksum_size: usize,
-    ) -> Result<LicenseKey, &'static str> {
+    ) -> Result<LicenseKey, Report> {
         if raw_key.len() < (key_size + payload_size + checksum_size) {
-            return Err(
-                "Cannot deserialize license key with larger properties than raw key itself!",
-            );
+            return Err(eyre!(
+                "Cannot deserialize license key with larger properties than raw key itself!"
+            ));
         }
 
         let properties = LicenseKeyProperties {

@@ -1,4 +1,4 @@
-use rand::{Rng, RngCore};
+use rand::Rng;
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct LicenseMagic {

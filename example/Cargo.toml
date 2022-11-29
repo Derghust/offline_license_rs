@@ -9,3 +9,5 @@ simplelog = "0.12.0"
 
 offline_license_rs = { path = "../api" }
 hex = "0.4.3"
+
+color-eyre = "0.6.2"

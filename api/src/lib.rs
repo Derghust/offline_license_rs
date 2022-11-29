@@ -6,8 +6,9 @@ extern crate core;
 
 pub use crate::license_key::LicenseKey;
 
-pub mod adler32;
+mod adler32;
+mod license_checksum;
 pub mod license_key;
-pub mod license_magic;
+mod license_magic;
 pub mod license_operator;
 pub mod license_serializer;
