@@ -23,49 +23,45 @@ impl LicenseKeyProperties {
             checksum_size: 0,
         }
     }
+
+    pub fn size(&self) -> usize {
+        self.key_size + self.payload_size + self.checksum_size
+    }
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct LicenseKey {
+    pub properties: LicenseKeyProperties,
     pub key: Vec<u8>,
     pub payload: Vec<u8>,
     pub checksum: Vec<u8>,
-    pub properties: LicenseKeyProperties,
     pub serialized_key: Vec<u8>,
 }
 
 impl LicenseKey {
+    // ==================================================
+    //                   Constructor
+    // ==================================================
+
     #[inline(always)]
-    pub fn deserialize(
-        raw_key: &Vec<u8>,
-        key_size: usize,
-        payload_size: usize,
-        checksum_size: usize,
-    ) -> Result<LicenseKey, Report> {
-        if raw_key.len() < (key_size + payload_size + checksum_size) {
-            return Err(eyre!(
-                "Cannot deserialize license key with larger properties than raw key itself!"
-            ));
-        }
-
-        let properties = LicenseKeyProperties {
-            key_size,
-            payload_size,
-            checksum_size,
-        };
-
-        Ok(LicenseKey {
-            key: raw_key[0..key_size].to_vec(),
-            payload: raw_key[key_size..key_size + payload_size].to_vec(),
-            checksum: raw_key[key_size + payload_size..key_size + payload_size + checksum_size]
-                .to_vec(),
+    pub fn new(
+        properties: LicenseKeyProperties,
+        key: Vec<u8>,
+        payload: Vec<u8>,
+        checksum: Vec<u8>,
+        serialized_key: Vec<u8>,
+    ) -> Self {
+        LicenseKey {
             properties,
-            serialized_key: Vec::new(),
-        })
+            key,
+            payload,
+            checksum,
+            serialized_key,
+        }
     }
 
     #[inline(always)]
-    pub fn default() -> LicenseKey {
+    pub fn default() -> Self {
         LicenseKey {
             key: Vec::new(),
             payload: Vec::new(),
@@ -73,6 +69,33 @@ impl LicenseKey {
             properties: LicenseKeyProperties::default(),
             serialized_key: Vec::new(),
         }
+    }
+
+    // ==================================================
+    //                    Operators
+    // ==================================================
+
+    #[inline(always)]
+    pub fn deserialize(&self) -> Result<Self, Report> {
+        if self.serialized_key.len() < self.properties.size() {
+            return Err(eyre!(
+                "Cannot deserialize license key with larger properties than raw key itself!"
+            ));
+        }
+
+        Ok(LicenseKey {
+            properties: self.properties.clone(),
+            key: self.serialized_key[0..self.properties.key_size].to_vec(),
+            payload: self.serialized_key
+                [self.properties.key_size..self.properties.key_size + self.properties.payload_size]
+                .to_vec(),
+            checksum: self.serialized_key[self.properties.key_size + self.properties.payload_size
+                ..self.properties.key_size
+                    + self.properties.payload_size
+                    + self.properties.checksum_size]
+                .to_vec(),
+            serialized_key: self.serialized_key.clone(),
+        })
     }
 }
 
@@ -95,17 +118,29 @@ mod tests {
         raw_key.extend(key.clone());
         raw_key.extend(payload.clone());
         raw_key.extend(checksum.clone());
-
-        let deserialized_license_key = LicenseKey::deserialize(&raw_key, 4, 4, 4).unwrap();
-
         let manual_license_key = LicenseKey {
-            key,
-            payload,
-            checksum,
-            properties,
-            serialized_key: Vec::new(),
+            key: key.clone(),
+            payload: payload.clone(),
+            checksum: checksum.clone(),
+            properties: properties.clone(),
+            serialized_key: raw_key.clone(),
         };
 
-        assert_eq!(deserialized_license_key, manual_license_key);
+        let license_key = LicenseKey::new(
+            properties.clone(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            raw_key.clone(),
+        )
+        .deserialize();
+        match license_key {
+            Ok(valid) => {
+                assert_eq!(valid, manual_license_key);
+            }
+            Err(_) => {
+                assert!(false)
+            }
+        }
     }
 }

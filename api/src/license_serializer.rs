@@ -8,11 +8,15 @@ pub trait LicenseKeySerializer {
     fn serialize_key(&self, key: &[u8]) -> String;
 }
 
-pub struct DefaultLicenseKeySerializer {}
-
 /// Default license serializer is not recommended for use in Production. We recommend to define
 /// your own license serializer.
+pub struct DefaultLicenseKeySerializer {}
+
 impl LicenseKeySerializer for DefaultLicenseKeySerializer {
+    // ==================================================
+    //                    Operators
+    // ==================================================
+
     #[inline(always)]
     fn hash(&self, seed: &[u8], magic: &[u8]) -> u8 {
         let mut hash: Wrapping<u8> = Wrapping(0);

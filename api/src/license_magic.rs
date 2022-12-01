@@ -6,24 +6,32 @@ pub struct LicenseMagic {
 }
 
 impl LicenseMagic {
+    // ==================================================
+    //                   Constructor
+    // ==================================================
+
+    #[inline(always)]
     pub fn new(magic: Vec<Vec<u8>>) -> LicenseMagic {
         LicenseMagic { magic }
     }
 
+    #[inline(always)]
     pub fn default() -> LicenseMagic {
         LicenseMagic { magic: Vec::new() }
     }
 
+    // ==================================================
+    //                    Operators
+    // ==================================================
+
+    #[inline(always)]
     pub fn push(&mut self, magic: Vec<u8>) {
         self.magic.push(magic);
     }
 
+    #[inline(always)]
     pub fn payload_size(&self) -> usize {
         self.magic.iter().map(|m| m.len()).sum()
-    }
-
-    pub fn get_magic(&self) -> &Vec<Vec<u8>> {
-        &self.magic
     }
 
     #[inline(always)]
@@ -34,5 +42,14 @@ impl LicenseMagic {
             self.magic
                 .push((0..magic_count).map(|_| rng.gen()).collect());
         }
+    }
+
+    // ==================================================
+    //                Getters & Setters
+    // ==================================================
+
+    #[inline(always)]
+    pub fn get_magic(&self) -> &Vec<Vec<u8>> {
+        &self.magic
     }
 }
