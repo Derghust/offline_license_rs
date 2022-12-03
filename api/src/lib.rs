@@ -15,3 +15,4 @@ pub mod license_magic;
 pub mod license_operator;
 pub mod license_properties;
 pub mod license_serializer;
+mod magic;

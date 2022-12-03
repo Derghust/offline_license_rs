@@ -1,3 +1,4 @@
+use color_eyre::eyre::eyre;
 use color_eyre::Report;
 use log::{info, LevelFilter};
 use simplelog::{ColorChoice, Config, TermLogger, TerminalMode};
@@ -39,7 +40,7 @@ fn main() -> Result<(), Report> {
                 }
             }
         }
-        Err(report) => return Err(report),
+        Err(report) => return Err(eyre!(report.to_string())),
     }
 
     Ok(())

@@ -4,9 +4,9 @@
 //!
 //! [More about Adler-32](https://en.wikipedia.org/wiki/Adler-32)
 
+use crate::magic::Result;
 use byteorder::{BigEndian, ReadBytesExt};
-use color_eyre::eyre::eyre;
-use color_eyre::Report;
+use simple_error::bail;
 
 const ADLER32_MOD: u32 = 0xFFF1;
 
@@ -14,12 +14,12 @@ const ADLER32_MOD: u32 = 0xFFF1;
 ///
 /// Generate checksum from hash with developer defined left and right initialized values.
 #[inline(always)]
-pub fn adler32_checksum(hash: &[u8], init: &[u8]) -> Result<Vec<u8>, Report> {
+pub fn adler32_checksum(hash: &[u8], init: &[u8]) -> Result<Vec<u8>> {
     if init.len() != 8 {
-        return Err(eyre!(
+        bail!(
             "Cannot generate checksum with invalid init count! [count={}]",
             init.len()
-        ));
+        );
     }
 
     let mut split = init.split_at(4);

@@ -1,6 +1,6 @@
 use crate::adler32::adler32_checksum;
 use crate::license_serializer::HashOperator;
-use color_eyre::Report;
+use crate::magic::Result;
 
 pub struct LicenseChecksum {
     magic: Vec<u8>,
@@ -35,7 +35,7 @@ impl LicenseChecksum {
     // ==================================================
 
     #[inline(always)]
-    pub fn generate(&self, seed: &[u8]) -> Result<Vec<u8>, Report> {
+    pub fn generate(&self, seed: &[u8]) -> Result<Vec<u8>> {
         (self.operator)(seed, &self.magic)
     }
 

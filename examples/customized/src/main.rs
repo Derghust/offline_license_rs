@@ -1,3 +1,4 @@
+use color_eyre::eyre::eyre;
 use color_eyre::Report;
 use log::{info, LevelFilter};
 use offline_license_rs::adler32::adler32_checksum;
@@ -121,7 +122,7 @@ fn main() -> Result<(), Report> {
                 }
             }
         }
-        Err(report) => return Err(report),
+        Err(report) => return Err(eyre!(report.to_string())),
     }
 
     Ok(())

@@ -1,6 +1,7 @@
 #![allow(arithmetic_overflow)]
 
-use color_eyre::Report;
+use crate::magic::Result;
+
 use std::num::Wrapping;
 
 pub trait LicenseKeySerializer {
@@ -9,7 +10,7 @@ pub trait LicenseKeySerializer {
     fn serialize_key(&self, key: &[u8]) -> String;
 }
 
-pub type HashOperator = fn(&[u8], &[u8]) -> Result<Vec<u8>, Report>;
+pub type HashOperator = fn(&[u8], &[u8]) -> Result<Vec<u8>>;
 
 /// Default license serializer is not recommended for use in Production. We recommend to define
 /// your own license serializer.

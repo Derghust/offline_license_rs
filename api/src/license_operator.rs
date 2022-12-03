@@ -1,14 +1,14 @@
-use color_eyre::eyre::eyre;
-use color_eyre::Report;
-use log::info;
 use std::borrow::Borrow;
 
 use crate::license_blacklist::LicenseBlacklist;
 use crate::license_byte_check::LicenseByteCheck;
+use crate::magic::Result;
+
 use sha3::{
     digest::{ExtendableOutput, Update, XofReader},
     Shake256,
 };
+use simple_error::bail;
 
 use crate::license_checksum::LicenseChecksum;
 use crate::license_key::LicenseKeyStatus;
@@ -85,16 +85,16 @@ impl LicenseOperator {
     }
 
     #[inline(always)]
-    pub fn generate_license_key(&self, seed: &[u8]) -> Result<LicenseKey, Report> {
+    pub fn generate_license_key(&self, seed: &[u8]) -> Result<LicenseKey> {
         // Validate user parameters
         // Minimal 8 seed size, USER_PAYLOAD payload size and 4 checksum size
         let license_key_required_size: usize = 8 + self.magic.payload_size() + 4;
         if self.properties.key_size <= license_key_required_size {
-            return Err(eyre!(
+            bail!(
                 "Cannot generate license key with less than {} key size! [key_size={}]",
                 license_key_required_size,
                 self.properties.key_size
-            ));
+            );
         }
 
         let license_key_hash_size =

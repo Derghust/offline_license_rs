@@ -1,8 +1,7 @@
 use crate::license_magic::LicenseMagic;
 use crate::license_serializer::LicenseKeySerializer;
-use color_eyre::eyre::eyre;
-use color_eyre::Report;
-use log::info;
+use crate::magic::Result;
+use simple_error::bail;
 
 #[derive(Default)]
 pub struct LicenseByteCheck {
@@ -14,14 +13,14 @@ impl LicenseByteCheck {
     //                   Constructor
     // ==================================================
 
-    pub fn new(byte_positions: Vec<usize>, magic: &LicenseMagic) -> Result<Self, Report> {
+    pub fn new(byte_positions: Vec<usize>, magic: &LicenseMagic) -> Result<Self> {
         for &i in byte_positions.iter() {
             let magic_size = magic.get_magic().len();
             if i > magic_size - 1 {
-                return Err(eyre!(
+                bail!(
                     "Cannot initialize byte check with larger magic than {}!",
                     magic_size
-                ));
+                );
             }
         }
 

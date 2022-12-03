@@ -1,5 +1,6 @@
-use color_eyre::eyre::eyre;
-use color_eyre::Report;
+use crate::magic::Result;
+
+use simple_error::bail;
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum LicenseKeyStatus {
@@ -57,11 +58,9 @@ impl LicenseKey {
     // ==================================================
 
     #[inline(always)]
-    pub fn deserialize(&self) -> Result<Self, Report> {
+    pub fn deserialize(&self) -> Result<Self> {
         if self.serialized_key.len() < self.properties.size() {
-            return Err(eyre!(
-                "Cannot deserialize license key with larger properties than raw key itself!"
-            ));
+            bail!("Cannot deserialize license key with larger properties than raw key itself!");
         }
 
         Ok(LicenseKey {
