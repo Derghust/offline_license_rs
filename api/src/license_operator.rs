@@ -101,25 +101,15 @@ impl LicenseOperator {
             self.properties.key_size - self.checksum.get_byte_size() - self.magic.payload_size();
 
         let mut license_key = LicenseKey::default();
-        let mut serialized_license_key = Vec::new();
+        let mut serialized_license_key = Vec::<u8>::with_capacity(license_key_hash_size);
 
-        // Hash seed to license key
-        // TODO FIX ME https://github.com/Derghust/offline_license_rs/pull/1#discussion_r1033030414
-        let mut hasher = Shake256::default();
-        hasher.update(seed);
-        let mut reader = hasher.finalize_xof();
-        let mut buffer = vec![0u8; license_key_hash_size];
-        reader.read(&mut buffer);
-
-        for byte in buffer.to_vec().iter() {
-            serialized_license_key.push(*byte);
-            license_key.seed.push(*byte);
-        }
-        license_key.properties.key_size = buffer.len();
+        // Hash seed
+        Shake256::digest_xof(seed, &mut serialized_license_key);
+        license_key.seed.extend(serialized_license_key.clone());
 
         // Generate payload
         for m in self.magic.get_magic().iter() {
-            let payload = self.serializer.hash(buffer.borrow(), m);
+            let payload = self.serializer.hash(license_key.seed.borrow(), m);
             serialized_license_key.push(payload);
             license_key.payload.push(payload);
         }
