@@ -1,6 +1,6 @@
 use rand::Rng;
 
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug, Default)]
 pub struct LicenseMagic {
     magic: Vec<Vec<u8>>,
 }
@@ -13,11 +13,6 @@ impl LicenseMagic {
     #[inline(always)]
     pub fn new(magic: Vec<Vec<u8>>) -> LicenseMagic {
         LicenseMagic { magic }
-    }
-
-    #[inline(always)]
-    pub fn default() -> LicenseMagic {
-        LicenseMagic { magic: Vec::new() }
     }
 
     // ==================================================

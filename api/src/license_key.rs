@@ -8,7 +8,7 @@ pub enum LicenseKeyStatus {
     Blacklisted,
 }
 
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug, Default)]
 pub struct LicenseKeyProperties {
     pub key_size: usize,
     pub payload_size: usize,
@@ -16,23 +16,15 @@ pub struct LicenseKeyProperties {
 }
 
 impl LicenseKeyProperties {
-    pub fn default() -> Self {
-        LicenseKeyProperties {
-            key_size: 0,
-            payload_size: 0,
-            checksum_size: 0,
-        }
-    }
-
     pub fn size(&self) -> usize {
         self.key_size + self.payload_size + self.checksum_size
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug, Default)]
 pub struct LicenseKey {
     pub properties: LicenseKeyProperties,
-    pub key: Vec<u8>,
+    pub seed: Vec<u8>,
     pub payload: Vec<u8>,
     pub checksum: Vec<u8>,
     pub serialized_key: Vec<u8>,
@@ -53,21 +45,10 @@ impl LicenseKey {
     ) -> Self {
         LicenseKey {
             properties,
-            key,
+            seed: key,
             payload,
             checksum,
             serialized_key,
-        }
-    }
-
-    #[inline(always)]
-    pub fn default() -> Self {
-        LicenseKey {
-            key: Vec::new(),
-            payload: Vec::new(),
-            checksum: Vec::new(),
-            properties: LicenseKeyProperties::default(),
-            serialized_key: Vec::new(),
         }
     }
 
@@ -85,7 +66,7 @@ impl LicenseKey {
 
         Ok(LicenseKey {
             properties: self.properties.clone(),
-            key: self.serialized_key[0..self.properties.key_size].to_vec(),
+            seed: self.serialized_key[0..self.properties.key_size].to_vec(),
             payload: self.serialized_key
                 [self.properties.key_size..self.properties.key_size + self.properties.payload_size]
                 .to_vec(),
@@ -119,7 +100,7 @@ mod tests {
         raw_key.extend(payload.clone());
         raw_key.extend(checksum.clone());
         let manual_license_key = LicenseKey {
-            key: key.clone(),
+            seed: key.clone(),
             payload: payload.clone(),
             checksum: checksum.clone(),
             properties: properties.clone(),

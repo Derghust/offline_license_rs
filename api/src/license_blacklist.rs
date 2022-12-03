@@ -1,3 +1,4 @@
+#[derive(Default)]
 pub struct LicenseBlacklist {
     blacklist: Vec<Vec<u8>>,
 }
@@ -12,13 +13,6 @@ impl LicenseBlacklist {
         LicenseBlacklist { blacklist }
     }
 
-    #[inline(always)]
-    pub fn default() -> Self {
-        LicenseBlacklist {
-            blacklist: Vec::new(),
-        }
-    }
-
     // ==================================================
     //                    Operators
     // ==================================================
@@ -29,8 +23,8 @@ impl LicenseBlacklist {
     }
 
     #[inline(always)]
-    pub fn isBlacklisted(&self, seed: &Vec<u8>) -> bool {
-        self.blacklist.contains(seed)
+    pub fn is_blacklisted(&self, seed: Vec<u8>) -> bool {
+        self.blacklist.contains(&seed)
     }
 
     // ==================================================

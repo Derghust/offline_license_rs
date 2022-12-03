@@ -1,9 +1,10 @@
 use color_eyre::eyre::eyre;
 use color_eyre::Report;
-use rand::distributions::uniform::SampleBorrow;
+use log::info;
 use std::borrow::Borrow;
 
 use crate::license_blacklist::LicenseBlacklist;
+use crate::license_byte_check::LicenseByteCheck;
 use sha3::{
     digest::{ExtendableOutput, Update, XofReader},
     Shake256,
@@ -25,7 +26,7 @@ pub struct LicenseOperator {
     checksum: LicenseChecksum,
 
     blacklist: LicenseBlacklist,
-    byte_check: Vec<(usize, LicenseMagic)>,
+    byte_check: LicenseByteCheck,
 }
 
 impl LicenseOperator {
@@ -40,23 +41,16 @@ impl LicenseOperator {
         serializer: Box<dyn LicenseKeySerializer>,
         checksum: LicenseChecksum,
         blacklist: LicenseBlacklist,
-        byte_check: Vec<(usize, LicenseMagic)>,
+        byte_check: LicenseByteCheck,
     ) -> Self {
-        let mut license = LicenseOperator {
-            properties: properties.clone(),
+        LicenseOperator {
+            properties,
             magic,
             serializer,
             checksum,
             blacklist,
             byte_check,
-        };
-
-        license.magic.randomize_magic(
-            properties.magic_size.clone(),
-            properties.magic_count.clone(),
-        );
-
-        license
+        }
     }
 
     /// Default license operator is not recommended for use in Production. We recommend to define
@@ -73,7 +67,7 @@ impl LicenseOperator {
             serializer: Box::new(DefaultLicenseKeySerializer {}),
             checksum: LicenseChecksum::default(checksum_magic),
             blacklist: LicenseBlacklist::default(),
-            byte_check: Vec::new(),
+            byte_check: LicenseByteCheck::default(),
         };
 
         license.magic.randomize_magic(magic_size, magic_count);
@@ -119,7 +113,7 @@ impl LicenseOperator {
 
         for byte in buffer.to_vec().iter() {
             serialized_license_key.push(*byte);
-            license_key.key.push(*byte);
+            license_key.seed.push(*byte);
         }
         license_key.properties.key_size = buffer.len();
 
@@ -132,7 +126,7 @@ impl LicenseOperator {
         license_key.properties.payload_size = license_key.payload.len();
 
         // Create checksum
-        match self.checksum.execute(&serialized_license_key) {
+        match self.checksum.generate(&serialized_license_key) {
             Ok(valid) => {
                 serialized_license_key.extend_from_slice(&valid);
                 license_key.checksum.extend_from_slice(&valid);
@@ -152,33 +146,30 @@ impl LicenseOperator {
         match license_key {
             Ok(valid) => {
                 // Validate checksum
-                let mut checksum_bytes = Vec::new();
-                checksum_bytes.extend(valid.key.clone());
-                checksum_bytes.extend(valid.payload.clone());
+                if !self.checksum.validate(
+                    valid.seed.clone(),
+                    valid.payload.clone(),
+                    valid.checksum,
+                ) {
+                    return LicenseKeyStatus::Invalid;
+                }
 
-                match self.checksum.execute(&checksum_bytes) {
-                    Ok(x) => {
-                        // Validate checksum
-                        if x != valid.checksum {
-                            return LicenseKeyStatus::Invalid;
-                        }
+                // Validate seed from blacklist
+                if self.blacklist.is_blacklisted(valid.seed.clone()) {
+                    return LicenseKeyStatus::Blacklisted;
+                }
 
-                        // Validate seed from blacklist
-                        if self.blacklist.isBlacklisted(&valid.key) {
-                            return LicenseKeyStatus::Blacklisted;
-                        }
-
-                        // Validate key with byte check
-                        for bc in &self.byte_check {
-                            if valid.key.get(bc.0).is_none() {
-                                return LicenseKeyStatus::Invalid;
-                            }
-                        }
-                    }
-                    Err(_) => return LicenseKeyStatus::Invalid,
-                };
+                // Validate payload with byte check
+                if !self.byte_check.validate(
+                    valid.payload.borrow(),
+                    self.serializer.borrow(),
+                    valid.seed.borrow(),
+                    self.magic.borrow(),
+                ) {
+                    return LicenseKeyStatus::Invalid;
+                }
             }
-            Err(report) => return LicenseKeyStatus::Invalid,
+            Err(_) => return LicenseKeyStatus::Invalid,
         }
 
         LicenseKeyStatus::Valid
@@ -203,7 +194,7 @@ mod tests {
     fn validate_license_key_validation() {
         let user_email = "sample.name@sample.domain.com";
 
-        let mut license_op = LicenseOperator::default(1, 3, [1, 2, 3, 4, 5, 6, 7, 8]);
+        let license_op = LicenseOperator::default(1, 3, [1, 2, 3, 4, 5, 6, 7, 8]);
 
         let license_key = license_op.generate_license_key(user_email.as_bytes());
 

@@ -28,9 +28,10 @@ prevent **Cracking** or **Unauthorized distributing** of your software also know
 - [Example](#example)
 - [Q&A](#q&a)
 
-## Example
+## Guides
 
-TODO
+**We do not recommend using any of default operators or exact same sources from examples, due to public knowledge how 
+license keys are specifically generated!**
 
 ## Q&A
 

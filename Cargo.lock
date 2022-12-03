@@ -253,7 +253,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "offline_license_rs_example"
+name = "offline_license_rs_customized"
+version = "0.1.0"
+dependencies = [
+ "color-eyre",
+ "hex",
+ "log",
+ "offline_license_rs",
+ "simplelog",
+]
+
+[[package]]
+name = "offline_license_rs_default"
 version = "0.1.0"
 dependencies = [
  "color-eyre",

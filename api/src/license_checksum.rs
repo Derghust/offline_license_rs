@@ -1,10 +1,11 @@
 use crate::adler32::adler32_checksum;
+use crate::license_serializer::HashOperator;
 use color_eyre::Report;
 
 pub struct LicenseChecksum {
     magic: Vec<u8>,
     byte_size: usize,
-    operator: fn(&[u8], &[u8]) -> Result<Vec<u8>, Report>,
+    operator: HashOperator,
 }
 
 impl LicenseChecksum {
@@ -12,11 +13,7 @@ impl LicenseChecksum {
     //                   Constructor
     // ==================================================
 
-    pub fn new(
-        magic: Vec<u8>,
-        byte_size: usize,
-        operator: fn(&[u8], &[u8]) -> Result<Vec<u8>, Report>,
-    ) -> Self {
+    pub fn new(magic: Vec<u8>, byte_size: usize, operator: HashOperator) -> Self {
         LicenseChecksum {
             magic,
             byte_size,
@@ -38,8 +35,19 @@ impl LicenseChecksum {
     // ==================================================
 
     #[inline(always)]
-    pub fn execute(&self, seed: &[u8]) -> Result<Vec<u8>, Report> {
+    pub fn generate(&self, seed: &[u8]) -> Result<Vec<u8>, Report> {
         (self.operator)(seed, &self.magic)
+    }
+
+    pub fn validate(&self, key: Vec<u8>, payload: Vec<u8>, checksum: Vec<u8>) -> bool {
+        let mut bytes = Vec::new();
+        bytes.extend(key);
+        bytes.extend(payload);
+
+        match self.generate(&bytes) {
+            Ok(generated_checksum) => generated_checksum == checksum,
+            Err(_) => false,
+        }
     }
 
     // ==================================================
