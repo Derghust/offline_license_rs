@@ -1,0 +1,13 @@
+[package]
+name = "offline_license_rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+log = { version="0.4.17", feature = ["release_max_level_warn"] }
+simple-error = "0.2.3"
+sha3 = "0.10.6"
+hex-literal = "0.3.4"
+rand = "0.8.5"
+hex = "0.4.3"
+byteorder = "1.4.3"
