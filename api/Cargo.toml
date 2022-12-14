@@ -2,6 +2,11 @@
 name = "offline_license_rs"
 version = "0.1.0"
 edition = "2021"
+license-file = "../LICENSE.md"
+readme = "../README.md"
+keywords = ["license", "generator", "api"]
+description = "Offline license key generator"
+repository = "https://github.com/Derghust/offline_license_rs"
 
 [dependencies]
 log = { version="0.4.17", feature = ["release_max_level_warn"] }
