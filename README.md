@@ -2,8 +2,8 @@
 
 ![License](https://img.shields.io/github/license/Derghust/offline_license_rs)
 ![Issues](https://img.shields.io/github/issues/Derghust/offline_license_rs)
-![CI](https://img.shields.io/github/workflow/status/Derghust/offline_license_rs/Continuous%20integration/dev)
-![Activity](https://img.shields.io/github/commit-activity/m/Derghust/offline_license_rs/dev)
+![CI](https://img.shields.io/github/workflow/status/Derghust/offline_license_rs/Continuous%20integration/main)
+![Activity](https://img.shields.io/github/commit-activity/m/Derghust/offline_license_rs/main)
 
 ---
 
