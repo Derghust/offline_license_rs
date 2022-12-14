@@ -4,10 +4,7 @@ use crate::license_blacklist::LicenseBlacklist;
 use crate::license_byte_check::LicenseByteCheck;
 use crate::magic::Result;
 
-use sha3::{
-    digest::{ExtendableOutput, Update, XofReader},
-    Shake256,
-};
+use sha3::{digest::ExtendableOutput, Shake256};
 use simple_error::bail;
 
 use crate::license_checksum::LicenseChecksum;
